@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AboutDialog</class>
+ <widget class="QDialog" name="AboutDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>398</width>
+    <height>365</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>关于凌工路2号</string>
+  </property>
+  <widget class="QPushButton" name="pushButton">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>310</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>确定</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>361</width>
+     <height>231</height>
+    </rect>
+   </property>
+   <property name="acceptDrops">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>版本：Alpha&lt;br&gt;完成日期：2013.8.4&lt;br&gt;本游戏是战棋类型的RPG游戏，全部使用C++基于Qt 4.8.1编写，谨以此游戏献给DUT的六年时光。&lt;br&gt;部分图片素材来源于&lt;a href =&quot;http://www.renren.com/254681260/&quot;&gt;@高畅&lt;/a&gt;团队的游戏&lt;a href =&quot;http://blog.sina.com.cn/s/blog_a02f00a20101fwdv.htm&quot;&gt;《大工演义》&lt;/a&gt;，特致以感谢。&lt;br&gt;有任何意见或者建议联系作者请关注新浪微博：&lt;a href =&quot;http://weibo.com/1793062077/&quot;&gt;@oooooutsider&lt;/a&gt;&lt;br&gt;或发邮件至blindpirate@qq.com&lt;br&gt;欢迎各位不吝赐教，报告Bug请尽量附上截图或者存档并进行详细描述。本游戏预计还将推出iOS和Android版，我将保证平台间存档的通用。欢迎大家持续关注，同时也欢迎有兴趣的同学加入，谢谢！&lt;br&gt;</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::RichText</enum>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
