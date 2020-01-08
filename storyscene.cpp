@@ -631,7 +631,7 @@ void StoryScene::move() {
       //        case static_cast<int>(StoryMapArticle):
       //// if(objectVec[(nextElement&0xff00)>>8]->canBeContactedDirectly()) / {
       //// objectVec[(nextElement&0xff00)>>8]->onContact(scriptVec); /
-      ///this->startAnimation(); /            }
+      /// this->startAnimation(); /            }
       //            return;
     case static_cast<int>(StoryMapExit): {
       int nextMapID = 0, nextHeroX = 0, nextHeroY = 0;
