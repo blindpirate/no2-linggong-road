@@ -2,7 +2,7 @@
 
 这是我在2013年基于Qt开发的一个战棋类RPG游戏，处于未完成状态。
 
-<img style="width: 50%; height: 50%" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/mainwindow.png" />
+<img style="width: 20%; height: 20%" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/mainwindow.png" />
 
 ![dialog](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/dialog.png)
 ![status](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/status.png)
