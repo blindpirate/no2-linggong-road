@@ -1,446 +1,398 @@
 #include "roleview.h"
 #include "roleanimation.h"
 
-//int RoleView::currentViewPointX=-0x0fffffff;
-//int RoleView::currentViewPointY=-0x0fffffff;//这个值不能太小,否则当地图尺寸小于视角尺寸时可能为负数
-//QPixmap * RoleView::sweatImage=NULL;//QPixmap();//(QPixmap(QCoreApplication::applicationDirPath() +QString("/data/image/other/sweat.png")));
- //静态成员变量必须通过赋值方式初始化
-//1 mapHero
-//2~99 英雄NPC
-//101~499 普通NPC
-//500~1000 反派NPC,他们的id+1500是图像文件名
-RoleView::RoleView(QWidget *parent, int mapX, int mapY,int roleID):
-    QWidget(parent),
-    currentViewPointX(0),currentViewPointY(0),
-    type(0),
-    mapArray(NULL),
-    pPathVec(NULL),
-    currentIndexInPathVec(0),
-    pointMapX(mapX*BASEWIDTH),pointMapY(mapY*BASEHEIGHT),
-    mapX(mapX),mapY(mapY),
-    ID(roleID),
-    rotateCount(0),
-    //animationType(RoleNoAnimation),
-    activeImage(NULL),
-    inactiveImage(NULL),
-    animationTimerID(0),rotateTimerID(0),
-    moveTimerID(0),
-    flashTimerID(0),
-    isActive(true),
-    reactOnViewMove(true),
-    beingContacted(false),
-    dir(NOTMOVING),
-    currentPose(STAYFRONT),
-    role(NULL),
-    pScriptVec(NULL)
-{
-    if(roleID==1)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(roleID));
-        reactOnViewMove=false;
-        type=static_cast<int>(StoryMapHero);
+// int RoleView::currentViewPointX=-0x0fffffff;
+// int
+// RoleView::currentViewPointY=-0x0fffffff;//这个值不能太小,否则当地图尺寸小于视角尺寸时可能为负数
+// QPixmap *
+// RoleView::sweatImage=NULL;//QPixmap();//(QPixmap(QCoreApplication::applicationDirPath()
+// +QString("/data/image/other/sweat.png"))); 静态成员变量必须通过赋值方式初始化
+// 1 mapHero
+// 2~99 英雄NPC
+// 101~499 普通NPC
+// 500~1000 反派NPC,他们的id+1500是图像文件名
+RoleView::RoleView(QWidget *parent, int mapX, int mapY, int roleID)
+    : QWidget(parent), currentViewPointX(0), currentViewPointY(0), type(0),
+      mapArray(NULL), pPathVec(NULL), currentIndexInPathVec(0),
+      pointMapX(mapX * BASEWIDTH), pointMapY(mapY * BASEHEIGHT), mapX(mapX),
+      mapY(mapY), ID(roleID), rotateCount(0),
+      // animationType(RoleNoAnimation),
+      activeImage(NULL), inactiveImage(NULL), animationTimerID(0),
+      rotateTimerID(0), moveTimerID(0), flashTimerID(0), isActive(true),
+      reactOnViewMove(true), beingContacted(false), dir(NOTMOVING),
+      currentPose(STAYFRONT), role(NULL), pScriptVec(NULL) {
+  if (roleID == 1) {
+    activeImage = new QPixmap(QApplication::applicationDirPath() +
+                              QString("/data/image/role/%1.png").arg(roleID));
+    reactOnViewMove = false;
+    type = static_cast<int>(StoryMapHero);
+  } else if (roleID < 500) {
+    activeImage = new QPixmap(QApplication::applicationDirPath() +
+                              QString("/data/image/role/%1.png").arg(roleID));
+    type = static_cast<int>(StoryMapNPC);
+  } else if (roleID < 1000) {
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(roleID + 1500));
+    type = static_cast<int>(StoryMapNPC);
+  } else if (roleID < 2000) {
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(ID - 1000));
+    inactiveImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/inactive_%1.png").arg(ID - 1000));
+    type = static_cast<int>(BattleHero);
+    if (inactiveImage->isNull()) {
+      qDebug() << roleID;
+      quitApp(ERRORGETROLEIMAGEFAIL);
     }
-    else if(roleID<500)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(roleID));
-        type=static_cast<int>(StoryMapNPC);
+  } else if (roleID < 3000) {
+    activeImage = new QPixmap(QApplication::applicationDirPath() +
+                              QString("/data/image/role/%1.png").arg(roleID));
+    inactiveImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/inactive_%1.png").arg(roleID));
+    type = static_cast<int>(BattleEnemy);
+    if (inactiveImage->isNull()) {
+      qDebug() << roleID;
+      quitApp(ERRORGETROLEIMAGEFAIL);
     }
-    else if(roleID<1000)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(roleID+1500));
-        type=static_cast<int>(StoryMapNPC);
+  } else {
+    assert(roleID < 4000);
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(roleID - 3000));
+    inactiveImage = new QPixmap(
+        QApplication::applicationDirPath() +
+        QString("/data/image/role/inactive_%1.png").arg(roleID - 3000));
+    type = static_cast<int>(BattleFriend);
+    if (inactiveImage->isNull()) {
+      qDebug() << roleID;
+      quitApp(ERRORGETROLEIMAGEFAIL);
     }
-    else if(roleID<2000)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(ID-1000));
-        inactiveImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/inactive_%1.png").arg(ID-1000));
-        type=static_cast<int>(BattleHero);
-        if(inactiveImage->isNull())
-        {
-            qDebug()<<roleID;
-            quitApp(ERRORGETROLEIMAGEFAIL);
-        }
-    }
-    else if(roleID<3000)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(roleID));
-        inactiveImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/inactive_%1.png").arg(roleID));
-        type=static_cast<int>(BattleEnemy);
-        if(inactiveImage->isNull())
-        {
-            qDebug()<<roleID;
-            quitApp(ERRORGETROLEIMAGEFAIL);
-        }
-    }
-    else
-    {
-        assert(roleID<4000);
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(roleID-3000));
-        inactiveImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/inactive_%1.png").arg(roleID-3000));
-        type=static_cast<int>(BattleFriend);
-        if(inactiveImage->isNull())
-        {
-            qDebug()<<roleID;
-            quitApp(ERRORGETROLEIMAGEFAIL);
-        }
-    }
+  }
 
-    if(activeImage->isNull())
-    {
-        qDebug()<<roleID;
-        quitApp(ERRORGETROLEIMAGEFAIL);
-    }
-    this->show();
-    this->setAttribute(Qt::WA_DeleteOnClose);
-    //this->setGeometry(blockX*BASEWIDTH,blockY*BASEHEIGHT,BASEWIDTH,BASEHEIGHT);
+  if (activeImage->isNull()) {
+    qDebug() << roleID;
+    quitApp(ERRORGETROLEIMAGEFAIL);
+  }
+  this->show();
+  this->setAttribute(Qt::WA_DeleteOnClose);
+  // this->setGeometry(blockX*BASEWIDTH,blockY*BASEHEIGHT,BASEWIDTH,BASEHEIGHT);
 }
-RoleView::RoleView(QWidget *parent, uchar *data):
-    QWidget(parent),
-    currentViewPointX(0),currentViewPointY(0),
-    mapArray(NULL),
-    pPathVec(NULL),
-    currentIndexInPathVec(0),
-    pointMapX(0),pointMapY(0),
-    mapX(0),mapY(0),
-    ID(0),
-    rotateCount(0),
-    activeImage(NULL),
-    inactiveImage(NULL),
-    animationTimerID(0),rotateTimerID(0),
-    moveTimerID(0),
-    flashTimerID(0),
-    isActive(true),
-    reactOnViewMove(true),
-    beingContacted(false),
-    dir(NOTMOVING),
-    currentPose(STAYFRONT),
-    role(NULL),
-    pScriptVec(NULL)
-{
-    this->setAttribute(Qt::WA_DeleteOnClose);
-    this->show();
+RoleView::RoleView(QWidget *parent, uchar *data)
+    : QWidget(parent), currentViewPointX(0), currentViewPointY(0),
+      mapArray(NULL), pPathVec(NULL), currentIndexInPathVec(0), pointMapX(0),
+      pointMapY(0), mapX(0), mapY(0), ID(0), rotateCount(0), activeImage(NULL),
+      inactiveImage(NULL), animationTimerID(0), rotateTimerID(0),
+      moveTimerID(0), flashTimerID(0), isActive(true), reactOnViewMove(true),
+      beingContacted(false), dir(NOTMOVING), currentPose(STAYFRONT), role(NULL),
+      pScriptVec(NULL) {
+  this->setAttribute(Qt::WA_DeleteOnClose);
+  this->show();
 
-    RoleViewData *pData=reinterpret_cast<RoleViewData *>(data);
-    currentIndexInPathVec=pData->currentIndexInPathVec;
-    pointMapX=pData->pointX;
-    pointMapY=pData->pointY;
-    mapX=pointMapX/BASEWIDTH;
-    mapY=pointMapY/BASEHEIGHT;
-    ID=pData->ID;
-    type=pData->type;
-    if(ID<1000&&ID>500)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(ID+1500));
-    }
-    else if(ID<2000&&ID>1000)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(ID-1000));
-    }
-    else if(ID>3000)
-    {
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(ID-3000));
-    }
-    else
-        activeImage=new QPixmap(QApplication::applicationDirPath() +QString("/data/image/role/%1.png").arg(ID));
-    //inactiveImage=new QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID));
-    if(activeImage->isNull())quitApp(ERRORGETROLEIMAGEFAIL);
-    switch(type)
-    {
-    case static_cast<int>(BattleHero):
-        inactiveImage=new QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID-1000));
-        break;
-    case static_cast<int>(BattleEnemy):
-        inactiveImage=new QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID));
-        break;
-    case static_cast<int>(BattleFriend):
-        inactiveImage=new QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID-3000));
-        break;
-    default:
-        break;
-    }
-    if(inactiveImage&&inactiveImage->isNull())quitApp(ERRORGETROLEIMAGEFAIL);
+  RoleViewData *pData = reinterpret_cast<RoleViewData *>(data);
+  currentIndexInPathVec = pData->currentIndexInPathVec;
+  pointMapX = pData->pointX;
+  pointMapY = pData->pointY;
+  mapX = pointMapX / BASEWIDTH;
+  mapY = pointMapY / BASEHEIGHT;
+  ID = pData->ID;
+  type = pData->type;
+  if (ID < 1000 && ID > 500) {
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(ID + 1500));
+  } else if (ID < 2000 && ID > 1000) {
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(ID - 1000));
+  } else if (ID > 3000) {
+    activeImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/%1.png").arg(ID - 3000));
+  } else
+    activeImage = new QPixmap(QApplication::applicationDirPath() +
+                              QString("/data/image/role/%1.png").arg(ID));
+  // inactiveImage=new
+  // QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID));
+  if (activeImage->isNull())
+    quitApp(ERRORGETROLEIMAGEFAIL);
+  switch (type) {
+  case static_cast<int>(BattleHero):
+    inactiveImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/inactive_%1.png").arg(ID - 1000));
+    break;
+  case static_cast<int>(BattleEnemy):
+    inactiveImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/inactive_%1.png").arg(ID));
+    break;
+  case static_cast<int>(BattleFriend):
+    inactiveImage =
+        new QPixmap(QApplication::applicationDirPath() +
+                    QString("/data/image/role/inactive_%1.png").arg(ID - 3000));
+    break;
+  default:
+    break;
+  }
+  if (inactiveImage && inactiveImage->isNull())
+    quitApp(ERRORGETROLEIMAGEFAIL);
 
-    currentPose=pData->currentPose;
-    dir=pData->dir;
-    flashTimerID=0;
-    isActive=pData->isActive;
-    reactOnViewMove=pData->reactOnViewMove;
-    role=NULL;
-    contactDirectly=pData->contactDirectly;
+  currentPose = pData->currentPose;
+  dir = pData->dir;
+  flashTimerID = 0;
+  isActive = pData->isActive;
+  reactOnViewMove = pData->reactOnViewMove;
+  role = NULL;
+  contactDirectly = pData->contactDirectly;
 
+  uchar *currentPointer = data + sizeof(RoleViewData);
+  //第二段内存的开头4个字节标记了本段pathVec的size
+  int pathVecSize = *(reinterpret_cast<int *>(currentPointer));
+  assert(pathVecSize >= 0);
+  currentPointer += sizeof(int);
+  if (pathVecSize) {
+    pPathVec = new vector<QPoint>;
+    while (pathVecSize--) {
+      pPathVec->push_back(
+          QPoint(*(reinterpret_cast<int *>(currentPointer)),
+                 *(reinterpret_cast<int *>(currentPointer + sizeof(int)))));
+      currentPointer += 2 * sizeof(int);
+    }
+  }
+  //从存档中读出pathVect
+  int scriptVecSize = *(reinterpret_cast<int *>(currentPointer));
+  currentPointer += sizeof(int);
 
-
-    uchar *currentPointer=data+sizeof(RoleViewData);
-    //第二段内存的开头4个字节标记了本段pathVec的size
-    int pathVecSize=*(reinterpret_cast<int *>(currentPointer));
-    assert(pathVecSize>=0);
-    currentPointer+=sizeof(int);
-    if(pathVecSize)
-    {
-        pPathVec=new vector<QPoint>;
-        while(pathVecSize--)
-        {
-            pPathVec->push_back(QPoint(*(reinterpret_cast<int *>(currentPointer)),
-                                       *(reinterpret_cast<int *>(currentPointer+sizeof(int)))));
-            currentPointer+=2*sizeof(int);
-        }
+  if (type == static_cast<int>(BattleEnemy) ||
+      type == static_cast<int>(BattleFriend)) {
+    role = new Role(*(reinterpret_cast<Role *>(currentPointer)));
+    currentPointer += sizeof(Role);
+  }
+  //第三段开头的4个字节标记本段scriptVec的size
+  if (scriptVecSize) {
+    pScriptVec = new vector<Script>;
+    while (scriptVecSize--) {
+      pScriptVec->push_back(
+          Script(*(reinterpret_cast<AnimationOperation *>(currentPointer)),
+                 QString::fromUtf8(reinterpret_cast<char *>(
+                     currentPointer + sizeof(AnimationOperation)))));
+      currentPointer += (sizeof(AnimationOperation) +
+                         strlen(reinterpret_cast<char *>(
+                             currentPointer + sizeof(AnimationOperation))) +
+                         1); // 4个字节+字符串长度+结束的NULL字符
     }
-    //从存档中读出pathVect
-    int scriptVecSize=*(reinterpret_cast<int *>(currentPointer));
-    currentPointer+=sizeof(int);
-
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))
-    {
-        role=new Role(*(reinterpret_cast<Role *>(currentPointer)));
-        currentPointer+=sizeof(Role);
-    }
-    //第三段开头的4个字节标记本段scriptVec的size
-    if(scriptVecSize)
-    {
-        pScriptVec=new vector<Script>;
-        while(scriptVecSize--)
-        {
-            pScriptVec->push_back(Script(*(reinterpret_cast<AnimationOperation *>(currentPointer)),
-                                         QString::fromUtf8(reinterpret_cast<char *>(currentPointer+sizeof(AnimationOperation)))));
-            currentPointer+=(sizeof(AnimationOperation)+strlen(reinterpret_cast<char *>(currentPointer+sizeof(AnimationOperation)))+1);//4个字节+字符串长度+结束的NULL字符
-        }
-    }
-    if(pData->moveTimerOn)
-    {
-        moveTimerID=startTimer(ROLEMOVEINTERVAL);
-    }
-    if(pData->animationTimerOn)
-    {
-        animationTimerID=startTimer(ANIMATIONINTERVAL);
-    }
-
+  }
+  if (pData->moveTimerOn) {
+    moveTimerID = startTimer(ROLEMOVEINTERVAL);
+  }
+  if (pData->animationTimerOn) {
+    animationTimerID = startTimer(ANIMATIONINTERVAL);
+  }
 }
-//void RoleView::hide()
+// void RoleView::hide()
 //{
 //    this->setVisible(false);
 //    hidden=true;
 //}
-void RoleView::show()
-{
-    //qDebug()<<"show";
-    this->setVisible(true);
-    if(moveTimerID==0&&pPathVec)
-    {
-        moveTimerID=startTimer(ROLEMOVEINTERVAL);
-        animationTimerID=startTimer(ANIMATIONINTERVAL);
-    }
+void RoleView::show() {
+  // qDebug()<<"show";
+  this->setVisible(true);
+  if (moveTimerID == 0 && pPathVec) {
+    moveTimerID = startTimer(ROLEMOVEINTERVAL);
+    animationTimerID = startTimer(ANIMATIONINTERVAL);
+  }
 }
-void RoleView::saveToData(uchar **data,int &length)
-{
-//    qDebug()<<pointMapX
-//              <<pointMapY
-//                <<ID
-//                  <<currentIndexInPathVec
-//                    <<type
-//                      <<currentPose
-//                        <<dir
-//                          <<isActive
-//                            <<reactOnViewMove
-//                              <<contactDirectly
-//                                <<animationTimerID;
-//    pointMapX;
-//    pointMapY;
-//    ID;
-//    currentIndexInPathVec;
-//    type;
-//    currentPose;
-//    isActive;
-//    reactOnViewMove;
-//    contactDirectly;
-//    animationTimerID;
-//    moveTimerID;
+void RoleView::saveToData(uchar **data, int &length) {
+  //    qDebug()<<pointMapX
+  //              <<pointMapY
+  //                <<ID
+  //                  <<currentIndexInPathVec
+  //                    <<type
+  //                      <<currentPose
+  //                        <<dir
+  //                          <<isActive
+  //                            <<reactOnViewMove
+  //                              <<contactDirectly
+  //                                <<animationTimerID;
+  //    pointMapX;
+  //    pointMapY;
+  //    ID;
+  //    currentIndexInPathVec;
+  //    type;
+  //    currentPose;
+  //    isActive;
+  //    reactOnViewMove;
+  //    contactDirectly;
+  //    animationTimerID;
+  //    moveTimerID;
 
-    RoleViewData selfData(pointMapX,
-                          pointMapY,
-                          ID,
-                          currentIndexInPathVec,
-                          type,
-                          currentPose,
-                          dir,
-                          isActive,
-                          reactOnViewMove,
-                          contactDirectly,
-                          animationTimerID==0?(false):(true),
-                          moveTimerID==0?(false):(true));
-    int scriptVecDataSize=0;//script数据的字节长度
-    if(pScriptVec)
-    {
-       for(int i=0;i<(pScriptVec->size());++i)
-       {
-           scriptVecDataSize+=(sizeof(AnimationOperation)+(*pScriptVec)[i].param.toUtf8().size()+1);
-       }
+  RoleViewData selfData(pointMapX, pointMapY, ID, currentIndexInPathVec, type,
+                        currentPose, dir, isActive, reactOnViewMove,
+                        contactDirectly,
+                        animationTimerID == 0 ? (false) : (true),
+                        moveTimerID == 0 ? (false) : (true));
+  int scriptVecDataSize = 0; // script数据的字节长度
+  if (pScriptVec) {
+    for (int i = 0; i < (pScriptVec->size()); ++i) {
+      scriptVecDataSize += (sizeof(AnimationOperation) +
+                            (*pScriptVec)[i].param.toUtf8().size() + 1);
     }
-    //计算script数据区的长度,不算开头的size的4个字节
+  }
+  //计算script数据区的长度,不算开头的size的4个字节
 
-    int pathVecDataSize=((pPathVec)?(pPathVec->size()*2*sizeof(int)):(0));
-    //计算path数据区的长度,每个QPoint包含2*sizeof(int)个字节,不算开头的size的4个字节
+  int pathVecDataSize =
+      ((pPathVec) ? (pPathVec->size() * 2 * sizeof(int)) : (0));
+  //计算path数据区的长度,每个QPoint包含2*sizeof(int)个字节,不算开头的size的4个字节
 
+  if (type == static_cast<int>(BattleEnemy) ||
+      type ==
+          static_cast<int>(
+              BattleFriend)) //若为这两种不需要存储path和Script,需要额外存储Role数据
+  {
+    length = sizeof(RoleViewData) + sizeof(int) + sizeof(int) + sizeof(Role);
+  } else {
+    length = sizeof(RoleViewData) + sizeof(int) + pathVecDataSize +
+             sizeof(int) + scriptVecDataSize;
+  }
+  *data = new uchar[length]; //由调用方负责释放
+  if (!(*data))
+    quitApp(ERRORMEMORYALLOCFAIL);
 
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))//若为这两种不需要存储path和Script,需要额外存储Role数据
-    {
-        length=sizeof(RoleViewData)+sizeof(int)+sizeof(int)+sizeof(Role);
+  uchar *currentPointer = *data;
+
+  memcpy(currentPointer, &selfData, sizeof(RoleViewData));
+  currentPointer += sizeof(RoleViewData);
+  //复制RoleViewData数据
+
+  if (type == static_cast<int>(BattleEnemy) ||
+      type == static_cast<int>(BattleFriend)) {
+    *(reinterpret_cast<int *>(currentPointer)) = 0;
+  } else
+    *(reinterpret_cast<int *>(currentPointer)) =
+        (pPathVec) ? (pPathVec->size()) : (0);
+
+  currentPointer += sizeof(int);
+  // pathVec的size,不是字节长度,这个size乘以8才是字节长度
+
+  if (type != static_cast<int>(BattleEnemy) &&
+      type != static_cast<int>(BattleFriend) && pPathVec) {
+    for (int i = 0; i < (pPathVec->size()); ++i) {
+      *(reinterpret_cast<int *>(currentPointer)) = (*pPathVec)[i].x();
+      *(reinterpret_cast<int *>(currentPointer + sizeof(int))) =
+          (*pPathVec)[i].y();
+      currentPointer += 2 * sizeof(int);
     }
-    else
-    {
-        length=sizeof(RoleViewData)+sizeof(int)+pathVecDataSize+sizeof(int)+scriptVecDataSize;
+  }
+  // pathVec数据归档,battleenemy和battlefriend不需要这一步
+
+  if (type == static_cast<int>(BattleEnemy) ||
+      type == static_cast<int>(BattleFriend)) {
+    *(reinterpret_cast<int *>(currentPointer)) = 0;
+  } else
+    *(reinterpret_cast<int *>(currentPointer)) =
+        (pScriptVec) ? (pScriptVec->size()) : (0);
+  currentPointer += sizeof(int);
+  //同样,这也是size而不是字节长度
+
+  if (type != static_cast<int>(BattleEnemy) &&
+      type != static_cast<int>(BattleFriend) && pScriptVec) {
+    for (int i = 0; i < (pScriptVec->size()); ++i) {
+      QByteArray scriptParamData = (*pScriptVec)[i].param.toUtf8();
+      *(reinterpret_cast<AnimationOperation *>(currentPointer)) =
+          (*pScriptVec)[i].op;
+      memcpy(currentPointer + sizeof(AnimationOperation),
+             scriptParamData.data(), scriptParamData.size() + 1);
+      currentPointer +=
+          (sizeof(AnimationOperation) + scriptParamData.size() + 1);
     }
-    *data=new uchar[length];//由调用方负责释放
-    if(!(*data))quitApp(ERRORMEMORYALLOCFAIL);
+  }
+  // scriptVec数据归档
 
-    uchar *currentPointer=*data;
-
-    memcpy(currentPointer,&selfData,sizeof(RoleViewData));
-    currentPointer+=sizeof(RoleViewData);
-    //复制RoleViewData数据
-
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))
-    {
-        *(reinterpret_cast<int *>(currentPointer))=0;
-    }
-    else
-        *(reinterpret_cast<int *>(currentPointer))=(pPathVec)?(pPathVec->size()):(0);
-
-    currentPointer+=sizeof(int);
-    //pathVec的size,不是字节长度,这个size乘以8才是字节长度
-
-    if(type!=static_cast<int>(BattleEnemy)&&
-            type!=static_cast<int>(BattleFriend)&&
-            pPathVec)
-    {
-        for(int i=0;i<(pPathVec->size());++i)
-        {
-            *(reinterpret_cast<int *>(currentPointer))=(*pPathVec)[i].x();
-            *(reinterpret_cast<int *>(currentPointer+sizeof(int)))=(*pPathVec)[i].y();
-            currentPointer+=2*sizeof(int);
-        }
-    }
-    //pathVec数据归档,battleenemy和battlefriend不需要这一步
-
-
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))
-    {
-        *(reinterpret_cast<int *>(currentPointer))=0;
-    }
-    else
-        *(reinterpret_cast<int *>(currentPointer))=(pScriptVec)?(pScriptVec->size()):(0);
-    currentPointer+=sizeof(int);
-    //同样,这也是size而不是字节长度
-
-    if(type!=static_cast<int>(BattleEnemy)&&
-            type!=static_cast<int>(BattleFriend)&&
-            pScriptVec)
-    {
-        for(int i=0;i<(pScriptVec->size());++i)
-        {
-            QByteArray scriptParamData=(*pScriptVec)[i].param.toUtf8();
-            *(reinterpret_cast<AnimationOperation *>(currentPointer))=(*pScriptVec)[i].op;
-            memcpy(currentPointer+sizeof(AnimationOperation),
-                   scriptParamData.data(),
-                   scriptParamData.size()+1);
-            currentPointer+=(sizeof(AnimationOperation)+scriptParamData.size()+1);
-        }
-    }
-    //scriptVec数据归档
-
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))
-    {
-        memcpy(currentPointer,role,sizeof(Role));
-        currentPointer+=sizeof(Role);
-    }
-    assert((*data)+length==currentPointer);
+  if (type == static_cast<int>(BattleEnemy) ||
+      type == static_cast<int>(BattleFriend)) {
+    memcpy(currentPointer, role, sizeof(Role));
+    currentPointer += sizeof(Role);
+  }
+  assert((*data) + length == currentPointer);
 }
-RoleView::~RoleView()
-{
-    delete activeImage;
-    delete inactiveImage;
-    delete pPathVec;
-    delete pScriptVec;
-    if(type==static_cast<int>(BattleEnemy)||
-            type==static_cast<int>(BattleFriend))
-    {
-        delete role;
-    }
+RoleView::~RoleView() {
+  delete activeImage;
+  delete inactiveImage;
+  delete pPathVec;
+  delete pScriptVec;
+  if (type == static_cast<int>(BattleEnemy) ||
+      type == static_cast<int>(BattleFriend)) {
+    delete role;
+  }
 }
-//public:
-void RoleView::startMoving(bool fastMoving)
-{
-//    for(int i=0;i<pPathVec->size();++i)
-//    {
-//        qDebug()<<(*pPathVec)[i].x()<<(*pPathVec)[i].y();
-//    }
-    //this->beingContacted=false;
-    if(pPathVec==NULL||pPathVec->empty())return;//如果只有一个点的话移动不?
-    assert(moveTimerID==0);
-    if(fastMoving)
-        moveTimerID=startTimer(ROLEFASTMOVEINTERVAL);
-    else moveTimerID=startTimer(ROLEMOVEINTERVAL);
-    if(animationTimerID==0)animationTimerID=startTimer(ANIMATIONINTERVAL);
-    currentIndexInPathVec=0;
+// public:
+void RoleView::startMoving(bool fastMoving) {
+  //    for(int i=0;i<pPathVec->size();++i)
+  //    {
+  //        qDebug()<<(*pPathVec)[i].x()<<(*pPathVec)[i].y();
+  //    }
+  // this->beingContacted=false;
+  if (pPathVec == NULL || pPathVec->empty())
+    return; //如果只有一个点的话移动不?
+  assert(moveTimerID == 0);
+  if (fastMoving)
+    moveTimerID = startTimer(ROLEFASTMOVEINTERVAL);
+  else
+    moveTimerID = startTimer(ROLEMOVEINTERVAL);
+  if (animationTimerID == 0)
+    animationTimerID = startTimer(ANIMATIONINTERVAL);
+  currentIndexInPathVec = 0;
+  this->update();
+}
+
+void RoleView::rewalk() {
+  this->beingContacted = false;
+  if (pPathVec == NULL || pPathVec->empty())
+    return;
+  assert(moveTimerID == 0);
+  moveTimerID = startTimer(ROLEMOVEINTERVAL);
+  if (animationTimerID == 0)
+    animationTimerID = startTimer(ANIMATIONINTERVAL);
+  this->update();
+}
+void RoleView::moveToPointOfMap(int x, int y) {
+  // qDebug()<<currentViewPointX<<" "<<currentViewPointY;
+  this->pointMapX = x;
+  this->pointMapY = y;
+  // if(x%BASEWIDTH==0&&y%BASEHEIGHT==0)
+  this->mapX = x / BASEWIDTH;
+  this->mapY = y / BASEHEIGHT;
+
+  //保持mapX和mapY为即将进入的格子
+  if (dir == DOWN && y % BASEHEIGHT != 0) {
+    this->mapY += 1;
+  } else if (dir == RIGHT && x % BASEWIDTH != 0) {
+    this->mapX += 1;
+  }
+
+  // if(x>=currentViewPointX&&x-currentViewPointX<WINDOWWIDTH&&y>=currentViewPointY&&y-currentViewPointY<WINDOWHEIGHT)
+  { //在可视区域内
+    // qDebug()<<x<<" "<<y<<" "<<currentViewPointX<< " "<<currentViewPointY;
+    this->move(x - currentViewPointX, y - currentViewPointY);
     this->update();
+  }
 }
-
-void RoleView::rewalk()
-{
-    this->beingContacted=false;
-    if(pPathVec==NULL||pPathVec->empty())return;
-    assert(moveTimerID==0);
-    moveTimerID=startTimer(ROLEMOVEINTERVAL);
-    if(animationTimerID==0)animationTimerID=startTimer(ANIMATIONINTERVAL);
-    this->update();
+void RoleView::startAnimation(DIRECTION value) {
+  dir = value;
+  if (animationTimerID == 0)
+    animationTimerID = startTimer(ANIMATIONINTERVAL);
+  changePose();
 }
-void RoleView::moveToPointOfMap(int x,int y)
-{
-    //qDebug()<<currentViewPointX<<" "<<currentViewPointY;
-    this->pointMapX=x;
-    this->pointMapY=y;
-    //if(x%BASEWIDTH==0&&y%BASEHEIGHT==0)
-    this->mapX=x/BASEWIDTH;
-    this->mapY=y/BASEHEIGHT;
-
-    //保持mapX和mapY为即将进入的格子
-    if(dir==DOWN&&y%BASEHEIGHT!=0)
-    {
-        this->mapY+=1;
-    }
-    else if(dir==RIGHT&&x%BASEWIDTH!=0)
-    {
-        this->mapX+=1;
-    }
-
-
-    //if(x>=currentViewPointX&&x-currentViewPointX<WINDOWWIDTH&&y>=currentViewPointY&&y-currentViewPointY<WINDOWHEIGHT)
-    {//在可视区域内
-        //qDebug()<<x<<" "<<y<<" "<<currentViewPointX<< " "<<currentViewPointY;
-        this->move(x-currentViewPointX,y-currentViewPointY);
-        this->update();
-    }
+void RoleView::stopAnimation() {
+  if (animationTimerID)
+    killTimer(animationTimerID);
+  animationTimerID = 0;
 }
-void RoleView::startAnimation(DIRECTION value)
-{
-    dir=value;
-    if(animationTimerID==0)
-        animationTimerID=startTimer(ANIMATIONINTERVAL);
-    changePose();
-}
-void RoleView::stopAnimation()
-{
-    if(animationTimerID)killTimer(animationTimerID);
-    animationTimerID=0;
-}
-void RoleView::changeDir(DIRECTION newDir)
-{
-    dir=newDir;
-}
+void RoleView::changeDir(DIRECTION newDir) { dir = newDir; }
 /*
 void RoleView::sweat(bool endWithSignal)
 {
@@ -452,16 +404,19 @@ void RoleView::sweat(bool endWithSignal)
 }
 void RoleView::attack()
 {
-//    AnimationWidget *widget=new AnimationWidget(this,pointMapX-currentViewPointX,pointMapX,QString("attackanimation.png"));
+//    AnimationWidget *widget=new
+AnimationWidget(this,pointMapX-currentViewPointX,pointMapX,QString("attackanimation.png"));
 //    widget->start();
 //    connect(widget,SIGNAL(destroyed()),this,SLOT(onAnimationEnd()));
 }
-void RoleView::recover(int originalHP,int recoverHP,int fullHP,bool endWithSignal)
+void RoleView::recover(int originalHP,int recoverHP,int fullHP,bool
+endWithSignal)
 {
 }
 void RoleView::hurt(int originalHP,int hurtHP,int fullHP,bool endWithSignal)
 {//hpslot从一开始就显示,但是它要到numberwidget开始动画之后才开始动画
-//    HPSlotWidget *hp=new HPSlotWidget(this->parentWidget(),mapX,mapY,originalHP,hurtHP,fullHP);
+//    HPSlotWidget *hp=new
+HPSlotWidget(this->parentWidget(),mapX,mapY,originalHP,hurtHP,fullHP);
 
 //    AnimationWidget *widget=new AnimationWidget(this,QString("hurt32.png"));
 //    widget->start();
@@ -469,7 +424,8 @@ void RoleView::hurt(int originalHP,int hurtHP,int fullHP,bool endWithSignal)
 //    NumberWidget *numberWidget=new NumberWidget(this,hurtHP);
 //    connect(widget,SIGNAL(destroyed()),numberWidget,SLOT(start()));
 //    connect(widget,SIGNAL(destroyed()),hp,SLOT(start()));
-//    connect(numberWidget,SIGNAL(destroyed()),this,SLOT(onAnimationEnd()));//这里假设numberWidget存在的时间长一点
+//
+connect(numberWidget,SIGNAL(destroyed()),this,SLOT(onAnimationEnd()));//这里假设numberWidget存在的时间长一点
 }
 void RoleView::die()
 {
@@ -478,360 +434,347 @@ void RoleView::die()
 
 }
 */
-void RoleView::flash()
-{
-    flashTimerID=startTimer(FLASHINTERVAL);
+void RoleView::flash() {
+  flashTimerID = startTimer(FLASHINTERVAL);
+  this->update();
+}
+void RoleView::dodge(bool endWithSignal) {
+  QPropertyAnimation *animation =
+      new QPropertyAnimation(this, "geometry", this);
+  animation->setDuration(400);
+  animation->setStartValue(this->geometry());
+  if (mapX == 0) //在最左边则向右闪避,否则全部向左闪避
+  {
+    animation->setKeyValueAt(0.5, QRect(mapX * BASEWIDTH - currentViewPointX +
+                                            BASEWIDTH, //向右闪避1个格子
+                                        mapY * BASEHEIGHT - currentViewPointY,
+                                        BASEWIDTH, BASEHEIGHT));
+  } else {
+
+    animation->setKeyValueAt(0.5, QRect(mapX * BASEWIDTH - currentViewPointX -
+                                            BASEWIDTH, //向左闪避1个格子
+                                        mapY * BASEHEIGHT - currentViewPointY,
+                                        BASEWIDTH, BASEHEIGHT));
+  }
+  animation->setKeyValueAt(0.9, this->geometry());
+  animation->setEndValue(this->geometry());
+  animation->start();
+  if (endWithSignal)
+    connect(animation, SIGNAL(finished()), this->parent(),
+            SLOT(startAnimation()));
+  connect(animation, SIGNAL(finished()), animation, SLOT(deleteLater()));
+}
+void RoleView::rotate() {
+  assert(animationTimerID);
+  killTimer(animationTimerID);
+  animationTimerID = 0;
+  assert(moveTimerID == 0);
+  assert(rotateTimerID == 0);
+  rotateTimerID = startTimer(ROTATEINTERVAL);
+  this->rotateCount = 8;
+  this->currentPose = STAYFRONT;
+  this->update();
+}
+void RoleView::setPathVec(QString path) {
+  if (path.length() == 0)
+    return;
+
+  if (pPathVec == NULL) {
+    pPathVec = new vector<QPoint>();
+  } else
+    pPathVec->clear();
+  // pPathVec->swap(vector<QPoint>());
+
+  getPathFromQString(*pPathVec, path);
+}
+// public slot:
+void RoleView::onViewMovedTo(int x, int y) {
+  currentViewPointX = x;
+  currentViewPointY = y;
+  if (!reactOnViewMove)
+    return;
+
+  // if(pointMapX>=x&&pointMapX-x<WINDOWWIDTH&&pointMapY>=y&&pointMapY-y<WINDOWHEIGHT)//在可视区域内
+  {
+    // if(ID==1)qDebug()<<pointMapX<<" "<<currentViewPointX<<" "<<pointMapY<<"
+    // "<<currentViewPointY;
+    this->move(pointMapX - currentViewPointX, pointMapY - currentViewPointY);
     this->update();
+  }
 }
-void RoleView::dodge(bool endWithSignal)
-{
-    QPropertyAnimation *animation=new QPropertyAnimation(this,"geometry",this);
-    animation->setDuration(400);
-    animation->setStartValue(this->geometry());
-    if(mapX==0)//在最左边则向右闪避,否则全部向左闪避
-    {
-        animation->setKeyValueAt(0.5,QRect(mapX*BASEWIDTH-currentViewPointX+BASEWIDTH,//向右闪避1个格子
-                                           mapY*BASEHEIGHT-currentViewPointY,
-                                           BASEWIDTH,
-                                           BASEHEIGHT));
-    }
-    else
-    {
+void RoleView::onAnimationEnd() {
+  emit roleAnimationEnd();
+  // qDebug()<<"sweat end";
+}
+// private:
+void RoleView::paintEvent(QPaintEvent *) {
+  QPainter painter(this);
+  if (!isActive) {
+    assert(moveTimerID == 0);
+    this->stopAnimation();
+    painter.drawPixmap(0, 0, BASEWIDTH, BASEHEIGHT, *inactiveImage);
+    return;
+  }
+  // if(flashTimerID==0)
+  painter.drawPixmap(QPoint(0, 0), *activeImage, getRectFromPose(currentPose));
+  // else
+  {}
+}
+void RoleView::timerEvent(QTimerEvent *event) {
+  if (event->timerId() == animationTimerID)
+    changePose();
+  else if (event->timerId() == moveTimerID) { //若是角色的移动事件
+    if (pointMapX % BASEWIDTH == 0 && pointMapY % BASEWIDTH == 0) {
+      if (beingContacted || !this->isVisible()) {
+        if (moveTimerID)
+          killTimer(moveTimerID);
+        moveTimerID = 0;
+        if (animationTimerID)
+          killTimer(animationTimerID);
+        animationTimerID = 0;
+        return;
+      }
 
-        animation->setKeyValueAt(0.5,QRect(mapX*BASEWIDTH-currentViewPointX-BASEWIDTH,//向左闪避1个格子
-                                           mapY*BASEHEIGHT-currentViewPointY,
-                                           BASEWIDTH,
-                                           BASEHEIGHT));
-    }
-    animation->setKeyValueAt(0.9,this->geometry());
-    animation->setEndValue(this->geometry());
-    animation->start();
-    if(endWithSignal)
-        connect(animation,SIGNAL(finished()),this->parent(),SLOT(startAnimation()));
-    connect(animation,SIGNAL(finished()),animation,SLOT(deleteLater()));
-}
-void RoleView::rotate()
-{
-    assert(animationTimerID);
-    killTimer(animationTimerID);
-    animationTimerID=0;
-    assert(moveTimerID==0);
-    assert(rotateTimerID==0);
-    rotateTimerID=startTimer(ROTATEINTERVAL);
-    this->rotateCount=8;
-    this->currentPose=STAYFRONT;
-    this->update();
-}
-void RoleView::setPathVec(QString path)
-{
-    if(path.length()==0)return;
+      mapX = pointMapX / BASEWIDTH;
+      mapY = pointMapY / BASEHEIGHT;
+      int currentPathX = (*pPathVec)[currentIndexInPathVec].x();
+      int currentPathY =
+          (*pPathVec)[currentIndexInPathVec].y(); // currentxy指已经经过的路径点
 
-    if(pPathVec==NULL)
-    {
-        pPathVec=new vector<QPoint>();
-    }
-    else
-        pPathVec->clear();
-        //pPathVec->swap(vector<QPoint>());
+      // qDebug()<<currentPathX<<" "<<currentPathY;
+      // assert(mapX==nextX||mapY==nextY);
+      if (mapX == currentPathX &&
+          mapY == currentPathY) { //只有在拐点处才能改变方向
+        if (currentIndexInPathVec == pPathVec->size() - 1)
+          currentIndexInPathVec = 0;
+        else
+          ++currentIndexInPathVec;
+        int nextPathX = (*pPathVec)[currentIndexInPathVec].x();
+        int nextPathY = (*pPathVec)[currentIndexInPathVec].y();
+        assert((mapX == nextPathX && mapY != nextPathY) ||
+               (mapY == nextPathY && mapX != nextPathX) ||
+               (nextPathX == -1 && nextPathY == -1) ||
+               (nextPathX == -2 &&
+                nextPathY ==
+                    -2)); // pathVec中相邻的两个点必然位于同一条直线上且不相同
+        if (nextPathX == -1) {
+          vector<QPoint>().swap(*pPathVec);
+          pPathVec = NULL;
+          // pPathVec->swap(vector<QPoint>());
+          this->stopAnimation();
+          emit roleAnimationEnd();
+          killTimer(moveTimerID);
+          moveTimerID = 0;
+          this->currentPose = STAYFRONT;
+          // emit roleAnimationEnd();
+          // isMoving=false;
+          return;
+        } else if (nextPathX ==
+                   -2) //-2意味着它应该消失了,通知scene销毁自己以及清理roleVec
+        {
+          this->stopAnimation();
+          killTimer(moveTimerID);
+          moveTimerID = 0;
+          emit roleDisappear(mapX, mapY);
+          return;
+        } else if (mapX > nextPathX) { //下一个x比当前x靠左
+          dir = LEFT;
+        } else if (mapX < nextPathX) {
+          dir = RIGHT;
+        } else if (mapY > nextPathY) { //下一个y比当前y靠上
+          dir = UP;
+        } else if (mapY < nextPathY) {
+          dir = DOWN;
+        }
+      }
 
-    getPathFromQString(*pPathVec,path);
-}
-//public slot:
-void RoleView::onViewMovedTo(int x, int y)
-{
-    currentViewPointX=x;
-    currentViewPointY=y;
-    if(!reactOnViewMove)return;
-
-    //if(pointMapX>=x&&pointMapX-x<WINDOWWIDTH&&pointMapY>=y&&pointMapY-y<WINDOWHEIGHT)//在可视区域内
-    {
-        //if(ID==1)qDebug()<<pointMapX<<" "<<currentViewPointX<<" "<<pointMapY<<" "<<currentViewPointY;
-        this->move(pointMapX-currentViewPointX,pointMapY-currentViewPointY);
-        this->update();
-    }
-}
-void RoleView::onAnimationEnd()
-{
-    emit roleAnimationEnd();
-    //qDebug()<<"sweat end";
-}
-//private:
-void RoleView::paintEvent(QPaintEvent *)
-{
-    QPainter painter(this);
-    if(!isActive)
-    {
-        assert(moveTimerID==0);
-        this->stopAnimation();
-        painter.drawPixmap(0,0,BASEWIDTH,BASEHEIGHT,*inactiveImage);
+      if (!processNextArrayElement(mapArray, mapX, mapY, dir))
         return;
     }
-    //if(flashTimerID==0)
-        painter.drawPixmap(QPoint(0,0),*activeImage,getRectFromPose(currentPose));
-    //else
-    {
+    //不论是否到达一个block内,都按照原定方向移动
 
-    }
-}
-void RoleView::timerEvent(QTimerEvent *event)
-{
-    if(event->timerId()==animationTimerID)
-        changePose();
-    else if(event->timerId()==moveTimerID)
-    {//若是角色的移动事件
-        if(pointMapX%BASEWIDTH==0&&pointMapY%BASEWIDTH==0)
-        {
-            if(beingContacted||!this->isVisible())
-            {
-                if(moveTimerID)killTimer(moveTimerID);
-                moveTimerID=0;
-                if(animationTimerID)killTimer(animationTimerID);
-                animationTimerID=0;
-                return;
-            }
-
-            mapX=pointMapX/BASEWIDTH;
-            mapY=pointMapY/BASEHEIGHT;
-            int currentPathX=(*pPathVec)[currentIndexInPathVec].x();
-            int currentPathY=(*pPathVec)[currentIndexInPathVec].y();//currentxy指已经经过的路径点
-
-            //qDebug()<<currentPathX<<" "<<currentPathY;
-            //assert(mapX==nextX||mapY==nextY);
-            if(mapX==currentPathX&&mapY==currentPathY)
-            { //只有在拐点处才能改变方向
-                if(currentIndexInPathVec==pPathVec->size()-1)currentIndexInPathVec=0;
-                else ++currentIndexInPathVec;
-                int nextPathX=(*pPathVec)[currentIndexInPathVec].x();
-                int nextPathY=(*pPathVec)[currentIndexInPathVec].y();
-                assert((mapX==nextPathX&&mapY!=nextPathY)
-                       ||(mapY==nextPathY&&mapX!=nextPathX)
-                       ||(nextPathX==-1&&nextPathY==-1)
-                       ||(nextPathX==-2&&nextPathY==-2));//pathVec中相邻的两个点必然位于同一条直线上且不相同
-                if(nextPathX==-1)
-                {
-                    vector<QPoint>().swap(*pPathVec);
-                    pPathVec=NULL;
-                    //pPathVec->swap(vector<QPoint>());
-                    this->stopAnimation();
-                    emit roleAnimationEnd();
-                    killTimer(moveTimerID);
-                    moveTimerID=0;
-                    this->currentPose=STAYFRONT;
-                    //emit roleAnimationEnd();
-                    //isMoving=false;
-                    return;
-                }
-                else if(nextPathX==-2)//-2意味着它应该消失了,通知scene销毁自己以及清理roleVec
-                {
-                    this->stopAnimation();
-                    killTimer(moveTimerID);
-                    moveTimerID=0;
-                    emit roleDisappear(mapX,mapY);
-                    return;
-                }
-                else if(mapX>nextPathX)
-                {//下一个x比当前x靠左
-                    dir=LEFT;
-                }
-                else if(mapX<nextPathX)
-                {
-                    dir=RIGHT;
-                }
-                else if(mapY>nextPathY)
-                {//下一个y比当前y靠上
-                    dir=UP;
-                }
-                else if(mapY<nextPathY)
-                {
-                    dir=DOWN;
-                }
-            }
-
-            if(!processNextArrayElement(mapArray,mapX,mapY,dir))return;
-        }
-        //不论是否到达一个block内,都按照原定方向移动
-
-        switch(dir)
-        {
-            case UP:moveToPointOfMap(pointMapX,pointMapY-ROLEMOVEPIXEL);break;
-            case DOWN:moveToPointOfMap(pointMapX,pointMapY+ROLEMOVEPIXEL);break;
-            case LEFT:moveToPointOfMap(pointMapX-ROLEMOVEPIXEL,pointMapY);break;
-            case RIGHT:moveToPointOfMap(pointMapX+ROLEMOVEPIXEL,pointMapY);break;
-            default:break;
-        }
-
-        emit AIMoved(pointMapX,pointMapY);
-
-    }
-    else if(event->timerId()==flashTimerID)
-    {
-        killTimer(flashTimerID);
-        emit roleAnimationEnd();
-        flashTimerID=0;
-    }
-    else if(event->timerId()==rotateTimerID)
-    {
-        switch(currentPose)
-        {
-        case STAYFRONT:
-            currentPose=STAYLEFT;
-            break;
-        case STAYLEFT:
-            currentPose=STAYBACK;
-            break;
-        case STAYBACK:
-            currentPose=STAYRIGHT;
-            break;
-        case STAYRIGHT:
-            currentPose=STAYFRONT;
-            break;
-        default:
-            qDebug()<<currentPose;
-            assert(0);
-        }
-        if((--rotateCount)==0)
-        {
-            killTimer(rotateTimerID);
-            rotateTimerID=0;
-            emit roleAnimationEnd();
-        }
-    }
-    this->update();
-
-}
-void RoleView::changePose()
-{
-    assert(dir);//计时器启动的时候，dir必然已经被赋值四个方向中的一个
-    switch(dir)
-    {
-        case UP:
-            if(currentPose==MOVINGBACK_1)currentPose=MOVINGBACK_2;
-            else if(currentPose==MOVINGBACK_2||currentPose==STAYBACK)currentPose=MOVINGBACK_1;
-            else currentPose=STAYBACK;
-            break;
-        case DOWN:
-            if(currentPose==MOVINGFRONT_1)currentPose=MOVINGFRONT_2;
-            else if(currentPose==MOVINGFRONT_2||currentPose==STAYFRONT)currentPose=MOVINGFRONT_1;
-            else currentPose=STAYFRONT;
-            break;
-        case LEFT:
-            if(currentPose==MOVINGLEFT_1)currentPose=MOVINGLEFT_2;
-            else if(currentPose==MOVINGLEFT_2||currentPose==STAYLEFT)currentPose=MOVINGLEFT_1;
-            else currentPose=STAYLEFT;
-            break;
-        case RIGHT:
-            if(currentPose==MOVINGRIGHT_1)currentPose=MOVINGRIGHT_2;
-            else if(currentPose==MOVINGRIGHT_2||currentPose==STAYRIGHT)currentPose=MOVINGRIGHT_1;
-            else currentPose=STAYRIGHT;
-            break;
-        default:break;
-    }
-    this->update();
-}
-bool RoleView::processNextArrayElement(int **mapArray,int x,int y,DIRECTION dir)
-{//这个函数由pathvec确定的路径调用,需要保证pathvec中的点不越界
-    switch(dir)
-    {
-        case UP:
-        if(mapArray[y-1][x]==0)
-        {
-            swap(mapArray[y][x],mapArray[y-1][x]);
-            mapY-=1;
-            return true;
-        }
-        return false;
-        case DOWN:
-        if(mapArray[y+1][x]==0)
-        {
-            swap(mapArray[y][x],mapArray[y+1][x]);
-            mapY+=1;
-            return true;
-        }
-        return false;
-        case LEFT:
-        if(mapArray[y][x-1]==0)
-        {
-            swap(mapArray[y][x],mapArray[y][x-1]);
-            mapX-=1;
-            return true;
-        }
-        return false;
-        case RIGHT:
-        if(mapArray[y][x+1]==0)
-        {
-            swap(mapArray[y][x],mapArray[y][x+1]);
-            mapX+=1;
-            return true;
-        }
-        return false;
-    default:
-        assert(0);
-    }
-}
-void RoleView::setScriptVec(QString param)
-{
-    if(param.length()==0||param[0]=='@')return;
-    if(pScriptVec==NULL)
-    {
-        pScriptVec=new vector<Script>();
-    }
-    else
-    {
-        vector<Script>().swap(*pScriptVec);
-        //pScriptVec->swap(vector<Script>());
-    }
-
-    getScriptFromQString(*pScriptVec,param);
-}
-void RoleView::onContact(vector<Script> &vec, DIRECTION dir)
-{//如果当前正在移动则停止
-    if(ID>300&&ID<500)
-        return;//id在300和500之间的不响应任何操作
-    switch(dir)
-    {
+    switch (dir) {
     case UP:
-        this->currentPose=STAYFRONT;
-        break;
+      moveToPointOfMap(pointMapX, pointMapY - ROLEMOVEPIXEL);
+      break;
     case DOWN:
-        this->currentPose=STAYBACK;
-        break;
+      moveToPointOfMap(pointMapX, pointMapY + ROLEMOVEPIXEL);
+      break;
     case LEFT:
-        this->currentPose=STAYRIGHT;
-        break;
+      moveToPointOfMap(pointMapX - ROLEMOVEPIXEL, pointMapY);
+      break;
     case RIGHT:
-        this->currentPose=STAYLEFT;
-        break;
+      moveToPointOfMap(pointMapX + ROLEMOVEPIXEL, pointMapY);
+      break;
     default:
-        assert(0);
-    }
-    beingContacted=true;
-//    for(int i=0;i<pScriptVec->size();++i)
-//    {
-//        qDebug()<<(*pScriptVec)[i].op<<" "<<(*pScriptVec)[i].param;
-//    }
-    if(pScriptVec)
-    {
-        if((pScriptVec->end()-1)->op==AniMultiTalkFlag)
-        {//如果末尾是这个标志的话
-            vector<Script>::iterator iter=pScriptVec->end();
-            while((--iter)->op!=AniStart)
-            {
-            }
-            vec=vector<Script>(iter,pScriptVec->end()-1);//从上一个AniStart(包括之)到rbegin()之前
-            for(int i=0;i<vec.size();++i)
-            {
-                qDebug()<<vec[i].op<<vec[i].param;
-            }
-            pScriptVec->erase(iter,pScriptVec->end());
-//            while(n--)
-//            {
-//                pScriptVec->pop_back();
-//            }
-        }
-        else
-            vec=*pScriptVec;
+      break;
     }
 
+    emit AIMoved(pointMapX, pointMapY);
+
+  } else if (event->timerId() == flashTimerID) {
+    killTimer(flashTimerID);
+    emit roleAnimationEnd();
+    flashTimerID = 0;
+  } else if (event->timerId() == rotateTimerID) {
+    switch (currentPose) {
+    case STAYFRONT:
+      currentPose = STAYLEFT;
+      break;
+    case STAYLEFT:
+      currentPose = STAYBACK;
+      break;
+    case STAYBACK:
+      currentPose = STAYRIGHT;
+      break;
+    case STAYRIGHT:
+      currentPose = STAYFRONT;
+      break;
+    default:
+      qDebug() << currentPose;
+      assert(0);
+    }
+    if ((--rotateCount) == 0) {
+      killTimer(rotateTimerID);
+      rotateTimerID = 0;
+      emit roleAnimationEnd();
+    }
+  }
+  this->update();
+}
+void RoleView::changePose() {
+  assert(dir); //计时器启动的时候，dir必然已经被赋值四个方向中的一个
+  switch (dir) {
+  case UP:
+    if (currentPose == MOVINGBACK_1)
+      currentPose = MOVINGBACK_2;
+    else if (currentPose == MOVINGBACK_2 || currentPose == STAYBACK)
+      currentPose = MOVINGBACK_1;
+    else
+      currentPose = STAYBACK;
+    break;
+  case DOWN:
+    if (currentPose == MOVINGFRONT_1)
+      currentPose = MOVINGFRONT_2;
+    else if (currentPose == MOVINGFRONT_2 || currentPose == STAYFRONT)
+      currentPose = MOVINGFRONT_1;
+    else
+      currentPose = STAYFRONT;
+    break;
+  case LEFT:
+    if (currentPose == MOVINGLEFT_1)
+      currentPose = MOVINGLEFT_2;
+    else if (currentPose == MOVINGLEFT_2 || currentPose == STAYLEFT)
+      currentPose = MOVINGLEFT_1;
+    else
+      currentPose = STAYLEFT;
+    break;
+  case RIGHT:
+    if (currentPose == MOVINGRIGHT_1)
+      currentPose = MOVINGRIGHT_2;
+    else if (currentPose == MOVINGRIGHT_2 || currentPose == STAYRIGHT)
+      currentPose = MOVINGRIGHT_1;
+    else
+      currentPose = STAYRIGHT;
+    break;
+  default:
+    break;
+  }
+  this->update();
+}
+bool RoleView::processNextArrayElement(
+    int **mapArray, int x, int y,
+    DIRECTION
+        dir) { //这个函数由pathvec确定的路径调用,需要保证pathvec中的点不越界
+  switch (dir) {
+  case UP:
+    if (mapArray[y - 1][x] == 0) {
+      swap(mapArray[y][x], mapArray[y - 1][x]);
+      mapY -= 1;
+      return true;
+    }
+    return false;
+  case DOWN:
+    if (mapArray[y + 1][x] == 0) {
+      swap(mapArray[y][x], mapArray[y + 1][x]);
+      mapY += 1;
+      return true;
+    }
+    return false;
+  case LEFT:
+    if (mapArray[y][x - 1] == 0) {
+      swap(mapArray[y][x], mapArray[y][x - 1]);
+      mapX -= 1;
+      return true;
+    }
+    return false;
+  case RIGHT:
+    if (mapArray[y][x + 1] == 0) {
+      swap(mapArray[y][x], mapArray[y][x + 1]);
+      mapX += 1;
+      return true;
+    }
+    return false;
+  default:
+    assert(0);
+  }
+}
+void RoleView::setScriptVec(QString param) {
+  if (param.length() == 0 || param[0] == '@')
+    return;
+  if (pScriptVec == NULL) {
+    pScriptVec = new vector<Script>();
+  } else {
+    vector<Script>().swap(*pScriptVec);
+    // pScriptVec->swap(vector<Script>());
+  }
+
+  getScriptFromQString(*pScriptVec, param);
+}
+void RoleView::onContact(vector<Script> &vec,
+                         DIRECTION dir) { //如果当前正在移动则停止
+  if (ID > 300 && ID < 500)
+    return; // id在300和500之间的不响应任何操作
+  switch (dir) {
+  case UP:
+    this->currentPose = STAYFRONT;
+    break;
+  case DOWN:
+    this->currentPose = STAYBACK;
+    break;
+  case LEFT:
+    this->currentPose = STAYRIGHT;
+    break;
+  case RIGHT:
+    this->currentPose = STAYLEFT;
+    break;
+  default:
+    assert(0);
+  }
+  beingContacted = true;
+  //    for(int i=0;i<pScriptVec->size();++i)
+  //    {
+  //        qDebug()<<(*pScriptVec)[i].op<<" "<<(*pScriptVec)[i].param;
+  //    }
+  if (pScriptVec) {
+    if ((pScriptVec->end() - 1)->op ==
+        AniMultiTalkFlag) { //如果末尾是这个标志的话
+      vector<Script>::iterator iter = pScriptVec->end();
+      while ((--iter)->op != AniStart) {
+      }
+      vec = vector<Script>(
+          iter, pScriptVec->end() - 1); //从上一个AniStart(包括之)到rbegin()之前
+      for (int i = 0; i < vec.size(); ++i) {
+        qDebug() << vec[i].op << vec[i].param;
+      }
+      pScriptVec->erase(iter, pScriptVec->end());
+      //            while(n--)
+      //            {
+      //                pScriptVec->pop_back();
+      //            }
+    } else
+      vec = *pScriptVec;
+  }
 }
 /*
 void RoleView::constructRolePointer(int level)
@@ -839,7 +782,8 @@ void RoleView::constructRolePointer(int level)
     assert(ID>100);
     assert(!role);
     ROLEJOB;
-    int HP,HPMax,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,
+    int
+HP,HPMax,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,
             speed,hedge,range;
     switch(ID)
     {
@@ -911,7 +855,7 @@ void RoleView::constructRolePointer(int level)
         speed=8;
         range=2;
 
-//                ,HPMax,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,
+// ,HPMax,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,
 //                    speed,hedge,range;
         break;
     case BAOLINAN:
@@ -1273,7 +1217,8 @@ void RoleView::constructRolePointer(int level)
         break;
     default:assert(0);
     }
-    role=new Role(ID,pro,level,HP,HPMax,0,0,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,speed,hedge,range,
+    role=new
+Role(ID,pro,level,HP,HPMax,0,0,physicalAttack,physicalDefence,magicAttack,magicDefence,accurcy,speed,hedge,range,
                   0,0,0,0,
                   0,0,0,0,
                   0,0);
@@ -1281,11 +1226,11 @@ void RoleView::constructRolePointer(int level)
 }
 */
 
-
-//void RoleView::loadInactiveImage()
+// void RoleView::loadInactiveImage()
 //{
 //    assert(inactiveImage==NULL);
-//    inactiveImage=new QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID));
+//    inactiveImage=new
+//    QPixmap(QApplication::applicationDirPath()+QString("/data/image/role/inactive_%1.png").arg(ID));
 //    if(activeImage->isNull())quitApp(ERRORGETROLEIMAGEFAIL);
 //}
 
