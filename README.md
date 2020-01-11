@@ -4,7 +4,7 @@
 
 <img style="width: 20%; height: 20%" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/mainwindow.png" />
 
-![dialog](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/dialog.png)
+![dialog](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/dialog.png | width=50)
 ![status](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/status.png)
 ![scene](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/scene.png)
 ![battle](https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/battle.png)
