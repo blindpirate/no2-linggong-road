@@ -2,15 +2,15 @@
 
 这是我在2013年基于Qt开发的一个战棋类RPG游戏，处于未完成状态。
 
-<img width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/mainwindow.png" />
+<img align="center" width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/mainwindow.png" />
 
-<img width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/dialog.png" />
+<img align="center" width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/dialog.png" />
 
-<img width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/status.png" />
+<img align="center" width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/status.png" />
 
-<img width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/scene.png" />
+<img align="center" width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/scene.png" />
 
-<img width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/battle.png" />
+<img align="center" width="320" height="350" src="https://raw.githubusercontent.com/blindpirate/no2-linggong-road/master/screenshots/battle.png" />
 
 ## How to build
 
