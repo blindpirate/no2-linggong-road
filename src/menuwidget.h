@@ -1,7 +1,7 @@
 #ifndef MENUWIDGET_H
 #define MENUWIDGET_H
 
-#include <lgl.h>
+#include "lgl.h"
 #define MENUWIDTH 160
 #define MENUHEIGHT 120
 
