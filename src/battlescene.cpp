@@ -1498,6 +1498,7 @@ void BattleScene::onAIMoved(int pointX, int pointY) {
   emit viewHasMovedToPoint(currentPointX, currentPointY);
   this->update();
 }
+
 void BattleScene::
     move() { //用cursorControlOn来判定是光标的移动事件还是focusRole的移动事件
   // qDebug()<<"move";
