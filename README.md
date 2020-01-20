@@ -18,3 +18,7 @@
 2. 在QtCreator中点击Run/Debug。第一次会弹出错误对话框，别紧张，这是正常的。
 3. 将项目文件夹下的data目录拷贝到可执行程序的目录下。注意，如果是macOS，需要拷贝到`{构建目录}/lgl.app/Contents/MacOS/`下。
 4. 再次点击Run/Debug。现在应该可以运行了。
+
+## License
+
+本项目遵守[WTFPL](https://en.wikipedia.org/wiki/WTFPL). Just do what the fuck you want to.
